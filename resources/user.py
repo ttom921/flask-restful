@@ -1,15 +1,11 @@
-from flask_restful import Resource, reqparse
-
-users = [
-    {'name': 'kitty'},
-    {'name': 'tom'}
-]
+from flask_restful import Resource
+from flask import request
+from models.schema.user import UserSchema
+users = []
+user_schema= UserSchema()
 
 
 class User(Resource):
-    parser = reqparse.RequestParser()
-    parser.add_argument('email', required=True, help='Email is required')
-    parser.add_argument('password', required=True, help='Password is required')
 
     def get(self, name):
         find = [item for item in users if item['name'] == name]
@@ -28,11 +24,13 @@ class User(Resource):
         }
 
     def post(self, name):
-        arg = self.parser.parse_args()
+        result = user_schema.load(request.json)
+        if len(result.errors)> 0:
+            return result.errors, 433
         user = {
             'name': name,
-            'email': arg['email'],
-            'password': arg['password']
+            'email': result.data['email'],
+            'password': result.data['password']
         }
         global users
         users.append(user)
@@ -41,15 +39,18 @@ class User(Resource):
             'user':user
         }
     def put(self, name):
-        arg =self.parser.parse_args()
+        result = user_schema.load(request.json)
+        if len(result.errors) >0:
+            return result.errors, 433
+
         find = [item for item in users if item['name']==name]
         if len(find) == 0:
             return{
                 'message':'username not exist'
             },403
         user = find[0]   
-        user['email']= arg['email'] 
-        user['password'] = arg['password']
+        user['email']= result.data['email'] 
+        user['password'] = result.data['password']
         return {
             'message':'Update user success',
             'user':user
